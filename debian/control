@@ -1,0 +1,17 @@
+Source: libjson2pb
+Priority: extra
+Maintainer: Sergey Zakharov <zakharov.sy@gmail.com>
+Standards-Version: 3.8.4
+Section: libs
+Homepage: https://github.com/alheio/json2pb/
+
+Package: libjson2pb-dev
+Section: libdevel
+Architecture: any
+Depends: ${shlibs:Depends},
+	libjansson-dev,
+	libprotobuf-dev,
+	protobuf-compiler
+Description: json 2 protobuf and protobuf 2 json
+ json 2 protobuf and protobuf 2 json 
+
