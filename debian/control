@@ -9,8 +9,8 @@ Package: libjson2pb
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends},
-	libjansson,
-	libprotobuf
+	libjansson4,
+	libprotobuf9
 Description: json 2 protobuf and protobuf 2 json
  json 2 protobuf and protobuf 2 json 
 
