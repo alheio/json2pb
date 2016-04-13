@@ -5,13 +5,22 @@ Standards-Version: 3.8.4
 Section: libs
 Homepage: https://github.com/alheio/json2pb/
 
+Package: libjson2pb
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends},
+	libjansson,
+	libprotobuf
+Description: json 2 protobuf and protobuf 2 json
+ json 2 protobuf and protobuf 2 json 
+
 Package: libjson2pb-dev
 Section: libdevel
 Architecture: any
 Depends: ${shlibs:Depends},
+	libjson2pb,
 	libjansson-dev,
 	libprotobuf-dev,
 	protobuf-compiler
-Description: json 2 protobuf and protobuf 2 json
- json 2 protobuf and protobuf 2 json 
-
+Description: json 2 protobuf and protobuf 2 json dev headers
+ json 2 protobuf and protobuf 2 json dev headers

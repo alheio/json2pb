@@ -14,5 +14,3 @@
 
 override_dh_auto_install:
 	dh_auto_install
-	mv debian/libjson2pb-dev/usr/lib64 debian/libjson2pb-dev/usr/lib
-

@@ -1,5 +1,11 @@
+libjson2pb (0.1.2-1) unstable; urgency=low
+
+  * build shared lib only, dynamic linking
+
+ --  <zaharov.sy@gmail.com>  Wed, 13 Apr 2016 17:23:44 +0300
+
 libjson2pb (0.1.1-1) unstable; urgency=low
 
   * Initial release. 
 
- -- MAINTAINER <zakharov.sy@gmail.com>  Fri, 03 Jul 2015 20:37:58 +0300
+ -- MAINTAINER <zaharov.sy@gmail.com>  Fri, 03 Jul 2015 20:37:58 +0300
