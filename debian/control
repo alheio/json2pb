@@ -8,19 +8,13 @@ Homepage: https://github.com/alheio/json2pb/
 Package: libjson2pb
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends},
-	libjansson4,
-	libprotobuf9
+Depends: ${shlibs:Depends}
 Description: json 2 protobuf and protobuf 2 json
  json 2 protobuf and protobuf 2 json 
 
 Package: libjson2pb-dev
 Section: libdevel
 Architecture: any
-Depends: ${shlibs:Depends},
-	libjson2pb,
-	libjansson-dev,
-	libprotobuf-dev,
-	protobuf-compiler
+Depends: ${shlibs:Depends}, libjson2pb, protobuf-compiler
 Description: json 2 protobuf and protobuf 2 json dev headers
  json 2 protobuf and protobuf 2 json dev headers
