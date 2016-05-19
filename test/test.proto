@@ -1,4 +1,6 @@
-package test;
+syntax = "proto2";
+
+package json2pb.test;
 
 message EchoRequest {
     required string text = 1;
@@ -13,6 +15,7 @@ message ComplexMessage {
     message SubMessage {
         required string field = 1;
         repeated EchoRequest echo = 2;
+        extensions 100 to 199;
     }
     optional SubMessage sub = 10;
     enum SubEnum {
@@ -21,11 +24,14 @@ message ComplexMessage {
     };
     repeated SubEnum _enum = 11;
     repeated string str_list = 12;
+    optional string str_optional = 13;
+    repeated string str_list_ill = 14;
     extensions 100 to 199;
 }
 
 extend ComplexMessage {
     optional bool e_bool = 101;
+    optional uint32 e_int = 102;
 }
 
 // vim: sts=4 sw=4 et

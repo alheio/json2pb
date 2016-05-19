@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+import "test.proto";
+
+message company
+{
+	message Structure
+	{
+		required uint32 id = 1;
+	}
+	
+	extend json2pb.test.ComplexMessage 
+	{
+		optional Structure structure = 103;
+	}
+	
+	extend json2pb.test.ComplexMessage.SubMessage
+	{
+		optional uint32 id = 100;
+		optional Structure sub_structure = 101;
+	}
+}

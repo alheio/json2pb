@@ -1,0 +1,38 @@
+{
+  "_str": "b",
+  "_bin": "0a0a0a0a",
+  "_bool": true,
+  "_float": 1,
+  "sub": {
+    "field": "subfield", 
+    "echo": [
+     {"text": "first"},
+     {"text": "second"}
+    ],
+    "ext": {
+      "company": {
+        "id": 100,
+        "sub_structure" : {
+          "id": 101
+        }
+      }
+    }
+  },
+  "_int": [10, 20, 30, 40],
+  "_enum":  ["VALUE1", 20],
+  "str_list":["v0", null, "v1"],
+  "str_optional": "optional",
+  "ext": {
+    "json2pb": {
+      "test": {
+        "e_bool":true,
+        "e_int":500
+      }
+    },
+    "company": {
+      "structure": {
+        "id": 200
+      }
+    }
+  }
+}

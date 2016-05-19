@@ -1,7 +1,15 @@
 Source: libjson2pb
 Priority: extra
-Maintainer: Sergey Zakharov <zakharov.sy@gmail.com>
+Maintainer: Sergey Zaharov <zaharov.sy@gmail.com>
 Standards-Version: 3.8.4
+Build-Depends:
+ debhelper
+ , g++
+ , cmake
+ , libprotobuf-dev (>= 2.6.1)
+ , protobuf-compiler (>= 2.6.1)
+ , libjansson-dev
+ , libboost-test-dev
 Section: libs
 Homepage: https://github.com/alheio/json2pb/
 
@@ -15,6 +23,6 @@ Description: json 2 protobuf and protobuf 2 json
 Package: libjson2pb-dev
 Section: libdevel
 Architecture: any
-Depends: ${shlibs:Depends}, libjson2pb, protobuf-compiler
+Depends: libjson2pb, protobuf-compiler
 Description: json 2 protobuf and protobuf 2 json dev headers
  json 2 protobuf and protobuf 2 json dev headers

@@ -5,27 +5,12 @@
  * it under the terms of the MIT license. See LICENSE for details.
  */
 
-#include <errno.h>
+#include "json2pb.h"
 #include <jansson.h>
-
-#include <google/protobuf/message.h>
-#include <google/protobuf/descriptor.h>
-
-#include <json2pb.h>
-
-#include <stdexcept>
-
-namespace {
 #include "bin2ascii.h"
-}
+#include "exceptions.hpp"
 
-using google::protobuf::Message;
-using google::protobuf::MessageFactory;
-using google::protobuf::Descriptor;
-using google::protobuf::FieldDescriptor;
-using google::protobuf::EnumDescriptor;
-using google::protobuf::EnumValueDescriptor;
-using google::protobuf::Reflection;
+using namespace google::protobuf;
 
 struct json_autoptr {
 	json_t * ptr;
@@ -34,18 +19,103 @@ struct json_autoptr {
 	json_t * release() { json_t *tmp = ptr; ptr = 0; return tmp; }
 };
 
-class j2pb_error : public std::exception {
-	std::string _error;
-public:
-	j2pb_error(const std::string &e) : _error(e) {}
-	j2pb_error(const FieldDescriptor *field, const std::string &e) : _error(field->name() + ": " + e) {}
-	virtual ~j2pb_error() throw() {};
+namespace j2pb 
+{
 
-	virtual const char *what() const throw () { return _error.c_str(); };
-};
+int json_dump_std_string(const char *buf, size_t size, void *data)
+{
+	std::string *s = (std::string *) data;
+	s->append(buf, size);
+	return 0;
+}
 
-static json_t * _pb2json(const Message& msg);
-static json_t * _field2json(const Message& msg, const FieldDescriptor *field, size_t index)
+Serializer::Serializer(Extensions* extensions)
+	: m_extensions(extensions)
+{
+}
+
+
+Serializer::Serializer(const Serializer& rhs)
+	: m_extensions(rhs.m_extensions->clone())
+{
+}
+
+
+std::string Serializer::toJson(const google::protobuf::Message& msg) const
+{
+	std::string r;
+
+	json_t *root = pb2json(msg);
+	json_autoptr _auto(root);
+	json_dump_callback(root, json_dump_std_string, &r, 0);
+	return r;
+}
+
+void Serializer::toProtobuf(const char *buf, size_t size, google::protobuf::Message &msg)
+{
+	json_t *root;
+	json_error_t error;
+
+	root = json_loadb(buf, size, 0, &error);
+
+	if (!root)
+		throw j2pb_error(std::string("Load failed: ") + error.text);
+
+	json_autoptr _auto(root);
+
+	if (!json_is_object(root))
+		throw j2pb_error("Malformed JSON: not an object");
+
+	json2pb(msg, root);
+}
+
+json_t* Serializer::pb2json(const google::protobuf::Message& msg) const
+{
+	const Descriptor *d = msg.GetDescriptor();
+	const Reflection *ref = msg.GetReflection();
+	
+	if (!d || !ref) return 0;
+
+	json_t *root = json_object();
+	json_autoptr _auto(root);
+
+	std::vector<const FieldDescriptor *> fields;
+	ref->ListFields(msg, &fields);
+	
+	json_t* ext = 0;
+
+	for (size_t i = 0; i != fields.size(); i++)
+	{
+		const FieldDescriptor *field = fields[i];
+
+		json_t *jf = 0;
+		if(field->is_repeated()) {
+			size_t count = ref->FieldSize(msg, field);
+			if (!count) continue;
+
+			json_autoptr array(json_array());
+			for (size_t j = 0; j < count; j++)
+				json_array_append_new(array.ptr, field2json(msg, field, j));
+			jf = array.release();
+		} else if (ref->HasField(msg, field))
+			jf = field2json(msg, field, 0);
+		else
+			continue;
+
+		if (field->is_extension())
+		{
+			m_extensions->write(field, root, jf);
+		}
+		else
+		{
+			json_object_set_new(root, field->name().c_str(), jf);
+		}
+		
+	}
+	return _auto.release();
+}
+
+json_t* Serializer::field2json(const google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, size_t index) const
 {
 	const Reflection *ref = msg.GetReflection();
 	const bool repeated = field->is_repeated();
@@ -84,7 +154,7 @@ static json_t * _field2json(const Message& msg, const FieldDescriptor *field, si
 			const Message& mf = (repeated)?
 				ref->GetRepeatedMessage(msg, field, index):
 				ref->GetMessage(msg, field);
-			jf = _pb2json(mf);
+			jf = pb2json(mf);
 			break;
 		}
 		case FieldDescriptor::CPPTYPE_ENUM: {
@@ -102,48 +172,60 @@ static json_t * _field2json(const Message& msg, const FieldDescriptor *field, si
 	return jf;
 }
 
-static json_t * _pb2json(const Message& msg)
+void Serializer::json2pb(google::protobuf::Message& msg, json_t* root)
 {
 	const Descriptor *d = msg.GetDescriptor();
 	const Reflection *ref = msg.GetReflection();
-	if (!d || !ref) return 0;
-
-	json_t *root = json_object();
-	json_autoptr _auto(root);
-
-	std::vector<const FieldDescriptor *> fields;
-	ref->ListFields(msg, &fields);
-
-	for (size_t i = 0; i != fields.size(); i++)
+	if (!d || !ref) throw j2pb_error("No descriptor or reflection");
+	
+	for (void* i = json_object_iter(root); i; i = json_object_iter_next(root, i))
 	{
-		const FieldDescriptor *field = fields[i];
+		const char *name = json_object_iter_key(i);
+		json_t *jf = json_object_iter_value(i);
 
-		json_t *jf = 0;
-		if(field->is_repeated()) {
-			size_t count = ref->FieldSize(msg, field);
-			if (!count) continue;
-
-			json_autoptr array(json_array());
-			for (size_t j = 0; j < count; j++)
-				json_array_append_new(array.ptr, _field2json(msg, field, j));
-			jf = array.release();
-		} else if (ref->HasField(msg, field))
-			jf = _field2json(msg, field, 0);
+		const FieldDescriptor *field = d->FindFieldByName(name);
+		if (NULL != field)
+		{
+			jsonArrayOrField2field(msg, field, jf);
+		}
 		else
-			continue;
-
-		const std::string &name = (field->is_extension())?field->full_name():field->name();
-		json_object_set_new(root, name.c_str(), jf);
+		{
+			if (m_extensions->read(ref, name, jf))
+			{
+				for (std::size_t j = 0; j<m_extensions->size(); ++j)
+				{
+					Extensions::extension_t ext = m_extensions->get(j);
+					jsonArrayOrField2field(msg, ext.first, ext.second);
+				}
+			}
+			else
+				throw j2pb_error("Unknown field: " + std::string(name));
+		}
 	}
-	return _auto.release();
 }
 
-static void _json2pb(Message& msg, json_t *root);
-static void _json2field(Message &msg, const FieldDescriptor *field, json_t *jf)
+void Serializer::jsonArrayOrField2field(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, json_t* jf)
+{
+	if (field->is_repeated()) 
+	{
+		if (!json_is_array(jf))
+			throw j2pb_error(field, "Not array");
+		
+		for (size_t j = 0, sz = json_array_size(jf); j < sz; j++)
+			json2field(msg, field, json_array_get(jf, j));
+	} 
+	else 
+		json2field(msg, field, jf);
+}
+
+void Serializer::json2field(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, json_t* jf)
 {
 	const Reflection *ref = msg.GetReflection();
 	const bool repeated = field->is_repeated();
 	json_error_t error;
+	
+	if (!field->is_required() && json_is_null(jf))
+		return;
 
 	switch (field->cpp_type())
 	{
@@ -186,7 +268,7 @@ static void _json2field(Message &msg, const FieldDescriptor *field, json_t *jf)
 			Message *mf = (repeated)?
 				ref->AddMessage(&msg, field):
 				ref->MutableMessage(&msg, field);
-			_json2pb(*mf, jf);
+			json2pb(*mf, jf);
 			break;
 		}
 		case FieldDescriptor::CPPTYPE_ENUM: {
@@ -208,66 +290,4 @@ static void _json2field(Message &msg, const FieldDescriptor *field, json_t *jf)
 	}
 }
 
-static void _json2pb(Message& msg, json_t *root)
-{
-	const Descriptor *d = msg.GetDescriptor();
-	const Reflection *ref = msg.GetReflection();
-	if (!d || !ref) throw j2pb_error("No descriptor or reflection");
-
-	for (void *i = json_object_iter(root); i; i = json_object_iter_next(root, i))
-	{
-		const char *name = json_object_iter_key(i);
-		json_t *jf = json_object_iter_value(i);
-
-		const FieldDescriptor *field = d->FindFieldByName(name);
-		if (!field)
-			field = ref->FindKnownExtensionByName(name);
-			//field = d->file()->FindExtensionByName(name);
-
-		if (!field) throw j2pb_error("Unknown field: " + std::string(name));
-
-		int r = 0;
-		if (field->is_repeated()) {
-			if (!json_is_array(jf))
-				throw j2pb_error(field, "Not array");
-			for (size_t j = 0; j < json_array_size(jf); j++)
-				_json2field(msg, field, json_array_get(jf, j));
-		} else
-			_json2field(msg, field, jf);
-	}
-}
-
-void json2pb(Message &msg, const char *buf, size_t size)
-{
-	json_t *root;
-	json_error_t error;
-
-	root = json_loadb(buf, size, 0, &error);
-
-	if (!root)
-		throw j2pb_error(std::string("Load failed: ") + error.text);
-
-	json_autoptr _auto(root);
-
-	if (!json_is_object(root))
-		throw j2pb_error("Malformed JSON: not an object");
-
-	_json2pb(msg, root);
-}
-
-int json_dump_std_string(const char *buf, size_t size, void *data)
-{
-	std::string *s = (std::string *) data;
-	s->append(buf, size);
-	return 0;
-}
-
-std::string pb2json(const Message &msg)
-{
-	std::string r;
-
-	json_t *root = _pb2json(msg);
-	json_autoptr _auto(root);
-	json_dump_callback(root, json_dump_std_string, &r, 0);
-	return r;
 }
