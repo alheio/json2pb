@@ -117,7 +117,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testSerializations, T, Fixtures, T)
 	f.m_serializer->toProtobuf(str1.c_str(), str1.length(), msg2);
 
 	msg1.SerializeToString(&str1);
-	msg1.SerializeToString(&str2);
+	msg2.SerializeToString(&str2);
 	
 	BOOST_CHECK(str1 == str2);
 }
