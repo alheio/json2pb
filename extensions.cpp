@@ -72,12 +72,19 @@ void OpenRTBExtensions::write(const google::protobuf::FieldDescriptor* fd, json_
 
 bool OpenRTBExtensions::read(const google::protobuf::Reflection* ref, const std::string& jk, json_t* jf)
 {
+	bool rc = false;
 	m_extensions.clear();
 	
-	if (jk == "ext" && NULL != jf && json_is_object(jf))
-		readMore(ref, "", jf);
+	if (jk == "ext") 
+	{
+		// allow unknown openrtb extensions
+		rc = true;
+		
+		if (NULL != jf && json_is_object(jf))
+			readMore(ref, "", jf);
+	}
 	
-	return !m_extensions.empty();
+	return rc;
 }
 
 void OpenRTBExtensions::readMore(const google::protobuf::Reflection* ref, const std::string& name, json_t* jf)
