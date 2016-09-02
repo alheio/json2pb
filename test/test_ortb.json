@@ -33,6 +33,9 @@
       "structure": {
         "id": 200
       }
+    },
+    "unknown": {
+      "some_data": 10
     }
   }
 }
