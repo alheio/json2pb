@@ -11,7 +11,7 @@ Build-Depends:
  , libjansson-dev
  , libboost-test-dev
 Section: libs
-Homepage: https://github.com/alheio/json2pb/
+Homepage: https://github.com/sape-ru/json2pb/
 
 Package: libjson2pb
 Section: libs

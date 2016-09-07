@@ -43,13 +43,19 @@ Serializer::Serializer(const Serializer& rhs)
 
 std::string Serializer::toJson(const google::protobuf::Message& msg) const
 {
+	return toJson(msg, m_options);
+}
+
+std::string Serializer::toJson(const Message& msg, const Options& options) const
+{
 	std::string r;
 
-	json_t *root = pb2json(msg);
+	json_t *root = pb2json(msg, options);
 	json_autoptr _auto(root);
 	json_dump_callback(root, json_dump_std_string, &r, 0);
 	return r;
 }
+
 
 void Serializer::toProtobuf(const char *buf, size_t size, google::protobuf::Message &msg)
 {
@@ -69,7 +75,7 @@ void Serializer::toProtobuf(const char *buf, size_t size, google::protobuf::Mess
 	json2pb(msg, root);
 }
 
-json_t* Serializer::pb2json(const google::protobuf::Message& msg) const
+json_t* Serializer::pb2json(const google::protobuf::Message& msg, const Options& options) const
 {
 	const Descriptor *d = msg.GetDescriptor();
 	const Reflection *ref = msg.GetReflection();
@@ -95,10 +101,10 @@ json_t* Serializer::pb2json(const google::protobuf::Message& msg) const
 
 			json_autoptr array(json_array());
 			for (size_t j = 0; j < count; j++)
-				json_array_append_new(array.ptr, field2json(msg, field, j));
+				json_array_append_new(array.ptr, field2json(msg, field, j, options));
 			jf = array.release();
 		} else if (ref->HasField(msg, field))
-			jf = field2json(msg, field, 0);
+			jf = field2json(msg, field, 0, options);
 		else
 			continue;
 
@@ -115,7 +121,7 @@ json_t* Serializer::pb2json(const google::protobuf::Message& msg) const
 	return _auto.release();
 }
 
-json_t* Serializer::field2json(const google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, size_t index) const
+json_t* Serializer::field2json(const Message& msg, const FieldDescriptor* field, size_t index, const Options& options) const
 {
 	const Reflection *ref = msg.GetReflection();
 	const bool repeated = field->is_repeated();
@@ -154,15 +160,15 @@ json_t* Serializer::field2json(const google::protobuf::Message& msg, const googl
 			const Message& mf = (repeated)?
 				ref->GetRepeatedMessage(msg, field, index):
 				ref->GetMessage(msg, field);
-			jf = pb2json(mf);
+			jf = pb2json(mf, options);
 			break;
 		}
 		case FieldDescriptor::CPPTYPE_ENUM: {
-			const EnumValueDescriptor* ef = (repeated)?
+			const EnumValueDescriptor* ef = (repeated)? 
 				ref->GetRepeatedEnum(msg, field, index):
 				ref->GetEnum(msg, field);
-
-			jf = json_integer(ef->number());
+			
+			jf = options.enumAsNumber() ? json_integer(ef->number()) : json_string(ef->name().c_str());
 			break;
 		}
 		default:

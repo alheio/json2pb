@@ -1,3 +1,9 @@
+libjson2pb (1.2.0-1) unstable; urgency=low
+
+  * pbuf->json serialization option: enum as number or as string (default: as string)
+
+ --  <zaharov.sy@gmail.com>  Wed, 07 Sep 2016 14:37:44 +0300
+
 libjson2pb (1.1.0-1) unstable; urgency=low
 
   * allow unknown openrtb extensions

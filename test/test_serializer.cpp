@@ -53,6 +53,8 @@ typedef boost::mpl::vector<FixtureClassic, FixtureOrtb> Fixtures;
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testFields, T, Fixtures, T)
 {
+	BOOST_TEST_MESSAGE("=== toProtobuf ===");
+	
 	Fixture& f = T::me;
 	json2pb::test::ComplexMessage msg;
 	
@@ -81,6 +83,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testFields, T, Fixtures, T)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testExtensions, T, Fixtures, T)
 {
+	BOOST_TEST_MESSAGE("=== extensions ===");
+	
 	Fixture& f = T::me;
 	json2pb::test::ComplexMessage msg;
 	
@@ -108,12 +112,16 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testExtensions, T, Fixtures, T)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testSerializations, T, Fixtures, T)
 {
+	BOOST_TEST_MESSAGE("=== serializations ===");
+	
 	Fixture& f = T::me;
 	json2pb::test::ComplexMessage msg1, msg2;
 	std::string str1, str2;
 	
 	f.m_serializer->toProtobuf(f.m_json.c_str(), f.m_json.length(), msg1);
 	str1 = f.m_serializer->toJson(msg1);
+	
+	BOOST_TEST_MESSAGE(str1);
 	f.m_serializer->toProtobuf(str1.c_str(), str1.length(), msg2);
 
 	msg1.SerializeToString(&str1);
