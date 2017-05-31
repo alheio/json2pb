@@ -37,6 +37,7 @@ namespace j2pb
 		Options& addEnumHook(const std::string& typeName, std::shared_ptr<SerializationHook> hook)
 		{
 			m_serializationHooks[typeName] = hook;
+			return *this;
 		}
 		
 		const SerializationHook* getEnumHook(const std::string& typeName) const
