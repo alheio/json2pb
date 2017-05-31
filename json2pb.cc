@@ -164,11 +164,16 @@ json_t* Serializer::field2json(const Message& msg, const FieldDescriptor* field,
 			break;
 		}
 		case FieldDescriptor::CPPTYPE_ENUM: {
-			const EnumValueDescriptor* ef = (repeated)? 
-				ref->GetRepeatedEnum(msg, field, index):
-				ref->GetEnum(msg, field);
-			
-			jf = options.enumAsNumber() ? json_integer(ef->number()) : json_string(ef->name().c_str());
+			const EnumValueDescriptor* ef = (repeated) ? ref->GetRepeatedEnum(msg, field, index) : ref->GetEnum(msg, field);
+			if (!options.enumAsNumber())
+			{
+				const SerializationHook* hook = options.getEnumHook(ef->type()->full_name());
+				jf = NULL != hook ? json_string(hook->preSerialize(ef->name()).c_str()) : json_string(ef->name().c_str());
+			}
+			else
+			{
+				jf = json_integer(ef->number());
+			}
 			break;
 		}
 		default:
@@ -283,7 +288,9 @@ void Serializer::json2field(google::protobuf::Message& msg, const google::protob
 			if (json_is_integer(jf)) {
 				ev = ed->FindValueByNumber(json_integer_value(jf));
 			} else if (json_is_string(jf)) {
-				ev = ed->FindValueByName(json_string_value(jf));
+				const SerializationHook* hook = m_options.getEnumHook(ed->full_name());
+				const char* valueName = json_string_value(jf);
+				ev = NULL != hook ? ed->FindValueByName(hook->preDeserialize(valueName)) : ed->FindValueByName(valueName);
 			} else
 				throw j2pb_error(field, "Not an integer or string");
 			if (!ev)

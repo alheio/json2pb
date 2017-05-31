@@ -34,4 +34,18 @@ extend ComplexMessage {
     optional uint32 e_int = 102;
 }
 
+enum ValuesEnum
+{
+	VALUE_1 = 1;
+	VALUE_2 = 2;
+	VALUE_3 = 3;
+	VALUE_4 = 4;
+};
+
+message EnumMessage
+{
+	repeated ValuesEnum enums = 1;
+};
+
+
 // vim: sts=4 sw=4 et

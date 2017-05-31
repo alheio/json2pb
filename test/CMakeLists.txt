@@ -7,5 +7,9 @@ PROTOBUF_GENERATE_CPP (PROTO_SRCS PROTO_HDRS ${proto})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 
 ADD_EXECUTABLE (test_serializer test_serializer.cpp ${PROTO_SRCS})
-TARGET_LINK_LIBRARIES (test_serializer json2pb boost_unit_test_framework)
+TARGET_LINK_LIBRARIES (test_serializer json2pb ${Boost_LIBRARIES})
 ADD_TEST (NAME test_serializer COMMAND test_serializer WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+ADD_EXECUTABLE (test_hooks test_hooks.cpp ${PROTO_SRCS})
+TARGET_LINK_LIBRARIES (test_hooks json2pb ${Boost_LIBRARIES})
+ADD_TEST (NAME test_hooks COMMAND test_hooks WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
