@@ -7,6 +7,8 @@
 
 #include "json2pb.h"
 #include <jansson.h>
+#include <algorithm>
+#include <ctype.h>
 #include "bin2ascii.h"
 #include "exceptions.hpp"
 
@@ -29,17 +31,16 @@ int json_dump_std_string(const char *buf, size_t size, void *data)
 	return 0;
 }
 
-Serializer::Serializer(Extensions* extensions)
+Serializer::Serializer(std::shared_ptr<Extensions> extensions)
 	: m_extensions(extensions)
 {
 }
 
-
-Serializer::Serializer(const Serializer& rhs)
-	: m_extensions(rhs.m_extensions->clone())
+Serializer::Serializer(std::shared_ptr<Extensions> extensions, const Options& options)
+	: m_extensions(extensions)
+	, m_options(options)
 {
 }
-
 
 std::string Serializer::toJson(const google::protobuf::Message& msg) const
 {
@@ -183,6 +184,14 @@ json_t* Serializer::field2json(const Message& msg, const FieldDescriptor* field,
 	return jf;
 }
 
+std::string toLowercase(const std::string& value)
+{
+	std::string rc;
+	rc.resize(value.size());
+	std::transform(value.begin(), value.end(), rc.begin(), ::tolower);
+	return rc;
+}
+
 void Serializer::json2pb(google::protobuf::Message& msg, json_t* root)
 {
 	const Descriptor *d = msg.GetDescriptor();
@@ -194,7 +203,17 @@ void Serializer::json2pb(google::protobuf::Message& msg, json_t* root)
 		const char *name = json_object_iter_key(i);
 		json_t *jf = json_object_iter_value(i);
 
-		const FieldDescriptor *field = d->FindFieldByName(name);
+		const FieldDescriptor *field;
+		
+		if (m_options.deserializeIgnoreCase())
+		{
+			field = d->FindFieldByLowercaseName(toLowercase(name));
+		}
+		else
+		{
+			field = d->FindFieldByName(name);
+		}
+		
 		if (NULL != field)
 		{
 			jsonArrayOrField2field(msg, field, jf);

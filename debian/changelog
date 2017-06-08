@@ -1,3 +1,9 @@
+libjson2pb (1.4.0-1) unstable; urgency=low
+
+  * case-insensitive json deserialization support
+
+ --  <zaharov.sy@gmail.com>  Thu, 08 June 2017 13:49:44 +0300
+
 libjson2pb (1.3.0-1) unstable; urgency=low
 
   * enum serialization hooks support

@@ -1,14 +1,13 @@
 #define BOOST_TEST_MODULE testSerializationHook
 #include <boost/test/unit_test.hpp>
 
-#include <iostream>
 #include "json2pb.h"
 #include "options.hpp"
 #include "test.pb.h"
 
 BOOST_AUTO_TEST_CASE(testHook)
 {
-	j2pb::Serializer serializer(new j2pb::OpenRTBExtensions());
+	j2pb::Serializer serializer(std::make_shared<j2pb::OpenRTBExtensions>());
 	
 	serializer.options().addEnumHook("json2pb.test.ValuesEnum", std::make_shared<j2pb::ChrReplaceSerializationHook>('_','-'));
 	

@@ -16,9 +16,12 @@ namespace j2pb
 		typedef std::map<std::string, std::shared_ptr<const SerializationHook> > hooks_t;
 		hooks_t m_serializationHooks;
 		
+		bool m_deserializeIgnoreCase;
+		
 	public:
 		Options() 
 			: m_enumAsNumber(false)
+			, m_deserializeIgnoreCase(false)
 		{
 		}
 		
@@ -45,6 +48,14 @@ namespace j2pb
 			hooks_t::const_iterator it = m_serializationHooks.find(typeName);
 			return it != m_serializationHooks.end() ? it->second.get() : NULL;
 		}
+		
+		Options& deserializeIgnoreCase(bool value)
+		{
+			m_deserializeIgnoreCase = value;
+			return *this;
+		}
+		
+		bool deserializeIgnoreCase() const { return m_deserializeIgnoreCase; }
 	};
 }
 

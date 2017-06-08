@@ -17,9 +17,9 @@ struct Fixture
 {
 	Fixture& me;
 	std::string m_json;
-	std::auto_ptr<j2pb::Serializer> m_serializer;
+	std::shared_ptr<j2pb::Serializer> m_serializer;
 	
-	Fixture(j2pb::Serializer* serializer, const std::string& path)
+	Fixture(std::shared_ptr<j2pb::Serializer> serializer, const std::string& path)
 		: me(*this)
 		, m_serializer(serializer)
 	{
@@ -36,20 +36,29 @@ struct Fixture
 struct FixtureClassic : public Fixture
 {
 	FixtureClassic() 
-		: Fixture(new j2pb::Serializer(new j2pb::ClassicExtensions()), "test.json")
+		: Fixture(std::make_shared<j2pb::Serializer>(std::make_shared<j2pb::ClassicExtensions>()), "test.json")
 	{
 	}
 };
+
+struct FixtureIgnoreCase : public Fixture
+{
+	FixtureIgnoreCase() 
+		: Fixture(std::make_shared<j2pb::Serializer>(std::make_shared<j2pb::ClassicExtensions>(), j2pb::Options().deserializeIgnoreCase(true)), "test_ignore_case.json")
+	{
+	}
+};
+
 
 struct FixtureOrtb : public Fixture
 {
 	FixtureOrtb() 
-		: Fixture(new j2pb::Serializer(new j2pb::OpenRTBExtensions()), "test_ortb.json")
+		: Fixture(std::make_shared<j2pb::Serializer>(std::make_shared<j2pb::OpenRTBExtensions>()), "test_ortb.json")
 	{
 	}
 };
 
-typedef boost::mpl::vector<FixtureClassic, FixtureOrtb> Fixtures;
+typedef boost::mpl::vector<FixtureClassic, FixtureIgnoreCase, FixtureOrtb> Fixtures;
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testFields, T, Fixtures, T)
 {

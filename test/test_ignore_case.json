@@ -1,0 +1,26 @@
+{
+  "_Str": "b",
+  "_BIN": "0a0a0a0a",
+  "_bOOl": true,
+  "_fLoaT": 1,
+  "SUB": {
+    "Field": "subfield", 
+    "ECHO": [
+     {"TEXT": "first"},
+     {"tEXT": "second"}
+    ],
+    "company.id": 100,
+    "company.sub_structure": {
+      "id": 101
+    }
+  },
+  "_int": [10, 20, 30, 40],
+  "_enum":  ["VALUE1", 20],
+  "str_list":["v0", null, "v1"],
+  "str_optional": null,
+  "json2pb.test.e_bool":true,
+  "json2pb.test.e_int":500,
+  "company.structure": {
+    "id": 200
+  }
+}

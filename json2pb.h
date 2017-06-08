@@ -21,11 +21,12 @@ namespace j2pb
 	class Serializer
 	{
 		Options m_options;
-		std::auto_ptr<Extensions> m_extensions;
+		std::shared_ptr<Extensions> m_extensions;
 		
 	public:
-		Serializer(Extensions* extensions);
-		Serializer(const Serializer& rhs);
+		Serializer(std::shared_ptr<Extensions> extensions);
+		Serializer(std::shared_ptr<Extensions> extensions, const Options& options);
+		Serializer(const Serializer& rhs) = delete;
 		
 		std::string toJson(const google::protobuf::Message &msg) const;
 		std::string toJson(const google::protobuf::Message &msg, const Options& options) const;
