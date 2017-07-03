@@ -1,3 +1,9 @@
+libjson2pb (1.4.1-1) unstable; urgency=low
+
+  * ignore empty strings in enumerators
+
+ --  <zaharov.sy@gmail.com>  Thu, 03 Jul 2017 13:56:44 +0300
+
 libjson2pb (1.4.0-1) unstable; urgency=low
 
   * case-insensitive json deserialization support

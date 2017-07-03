@@ -9,6 +9,7 @@
 #include <jansson.h>
 #include <algorithm>
 #include <ctype.h>
+#include <string.h>
 #include "bin2ascii.h"
 #include "exceptions.hpp"
 
@@ -307,8 +308,10 @@ void Serializer::json2field(google::protobuf::Message& msg, const google::protob
 			if (json_is_integer(jf)) {
 				ev = ed->FindValueByNumber(json_integer_value(jf));
 			} else if (json_is_string(jf)) {
-				const SerializationHook* hook = m_options.getEnumHook(ed->full_name());
 				const char* valueName = json_string_value(jf);
+				if (nullptr == valueName || '\0' == *valueName)
+					break; // ignore enum empty strings
+				const SerializationHook* hook = m_options.getEnumHook(ed->full_name());
 				ev = NULL != hook ? ed->FindValueByName(hook->preDeserialize(valueName)) : ed->FindValueByName(valueName);
 			} else
 				throw j2pb_error(field, "Not an integer or string");
