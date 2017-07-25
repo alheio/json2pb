@@ -229,8 +229,10 @@ void Serializer::json2pb(google::protobuf::Message& msg, json_t* root)
 					jsonArrayOrField2field(msg, ext.first, ext.second);
 				}
 			}
-			else
+			else if (!m_options.ignoreUnknownFields())
+			{
 				throw j2pb_error("Unknown field: " + std::string(name));
+			}
 		}
 	}
 }

@@ -18,10 +18,13 @@ namespace j2pb
 		
 		bool m_deserializeIgnoreCase;
 		
+		bool m_ignoreUnknownFields;
+		
 	public:
 		Options() 
 			: m_enumAsNumber(false)
 			, m_deserializeIgnoreCase(false)
+			, m_ignoreUnknownFields(false)
 		{
 		}
 		
@@ -56,6 +59,14 @@ namespace j2pb
 		}
 		
 		bool deserializeIgnoreCase() const { return m_deserializeIgnoreCase; }
+		
+		Options& ignoreUnknownFields(bool value)
+		{
+			m_ignoreUnknownFields = value;
+			return *this;
+		}
+		
+		bool ignoreUnknownFields() const { return m_ignoreUnknownFields; }
 	};
 }
 
