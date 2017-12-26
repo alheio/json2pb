@@ -22,5 +22,9 @@
   "json2pb.test.e_int":500,
   "company.structure": {
     "id": 200
-  }
+  },
+  "publisher_settings_list_id": [
+    "15005539984858473394",
+    "4575167660654300069"
+  ]
 }

@@ -61,12 +61,8 @@ void OpenRTBExtensions::write(const google::protobuf::FieldDescriptor* fd, json_
 			ext = innerObj;
 		}
 	}
-	
-	if (hasTokens)
-		json_object_set_new(ext, fd->name().c_str(), jf);
-	else
-		json_decref(jf);
-	
+
+	json_object_set_new(ext, fd->name().c_str(), jf);
 	json_decref(ext);
 }
 

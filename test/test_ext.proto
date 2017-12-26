@@ -20,3 +20,7 @@ message company
 		optional Structure sub_structure = 101;
 	}
 }
+
+extend json2pb.test.ComplexMessage {
+	repeated string publisher_settings_list_id = 104;
+}

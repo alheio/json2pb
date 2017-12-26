@@ -117,6 +117,12 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testExtensions, T, Fixtures, T)
 		const company::Structure& structure = sub.GetExtension(company::sub_structure);
 		BOOST_CHECK(structure.has_id() && 101 == structure.id());
 	}
+
+	{
+		BOOST_CHECK(2 == msg.ExtensionSize(publisher_settings_list_id));
+		BOOST_CHECK(msg.GetRepeatedExtension(publisher_settings_list_id).Get(0) == "15005539984858473394");
+		BOOST_CHECK(msg.GetRepeatedExtension(publisher_settings_list_id).Get(1) == "4575167660654300069");
+	}
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testSerializations, T, Fixtures, T)
@@ -130,11 +136,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testSerializations, T, Fixtures, T)
 	f.m_serializer->toProtobuf(f.m_json.c_str(), f.m_json.length(), msg1);
 	str1 = f.m_serializer->toJson(msg1);
 	
-	BOOST_TEST_MESSAGE(str1);
 	f.m_serializer->toProtobuf(str1.c_str(), str1.length(), msg2);
 
 	msg1.SerializeToString(&str1);
 	msg2.SerializeToString(&str2);
-	
+
 	BOOST_CHECK(str1 == str2);
 }
