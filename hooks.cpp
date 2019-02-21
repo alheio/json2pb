@@ -7,6 +7,11 @@ j2pb::ChrReplaceSerializationHook::ChrReplaceSerializationHook(char from, char t
 {
 }
 
+std::unique_ptr<j2pb::SerializationHook> j2pb::ChrReplaceSerializationHook::clone() const
+{
+	return std::make_unique<ChrReplaceSerializationHook>(*this);
+}
+
 std::string j2pb::ChrReplaceSerializationHook::preSerialize(const std::string& value) const
 {
 	std::string rc(value);

@@ -12,5 +12,8 @@
 %:
 	dh $@ 
 
+override_dh_auto_test:
+	dh_auto_test -- ARGS+="-T Test --output-on-failure"
+
 override_dh_auto_install:
 	dh_auto_install

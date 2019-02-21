@@ -1,4 +1,10 @@
 {
+  "Implicit_string_cast_int": 1,
+  "Implicit_string_cast_double": 1.5,
+  "Implicit_string_cast_boolean": true,
+  "Implicit_string_cast_array": [1,2,3],
+  "Implicit_string_cast_object": {"key": "val"},
+  "implicit_string_cast_repeated_int": [1,"2"],
   "_Str": "b",
   "_BIN": "0a0a0a0a",
   "_bOOl": true,

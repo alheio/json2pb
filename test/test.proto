@@ -26,6 +26,14 @@ message ComplexMessage {
     repeated string str_list = 12;
     optional string str_optional = 13;
     repeated string str_list_ill = 14;
+
+    optional string implicit_string_cast_int = 15;
+    optional string implicit_string_cast_double = 16;
+    optional string implicit_string_cast_boolean = 17;
+    optional string implicit_string_cast_array = 18;
+    optional string implicit_string_cast_object = 20;
+    repeated string implicit_string_cast_repeated_int = 21;
+
     extensions 100 to 199;
 }
 

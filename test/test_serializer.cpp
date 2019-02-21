@@ -7,10 +7,10 @@
 #include <string>
 #include <streambuf>
 #include <memory>
-#include <string.h>
+#include <cstring>
 
 #include "json2pb.h"
-#include "bin2ascii.h"
+#include "bin2ascii.hpp"
 #include "test_ext.pb.h"
 
 struct Fixture
@@ -21,22 +21,20 @@ struct Fixture
 	
 	Fixture(std::shared_ptr<j2pb::Serializer> serializer, const std::string& path)
 		: me(*this)
-		, m_serializer(serializer)
+		, m_serializer(std::move(serializer))
 	{
 		GOOGLE_PROTOBUF_VERIFY_VERSION;
 		std::ifstream f(path.c_str());
 		m_json.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-	}
-	
-	~Fixture()
-	{
+
+		m_serializer->options().ignoreUnknownFields(true);
 	}
 };
 
 struct FixtureClassic : public Fixture
 {
 	FixtureClassic() 
-		: Fixture(std::make_shared<j2pb::Serializer>(std::make_shared<j2pb::ClassicExtensions>()), "test.json")
+		: Fixture(std::make_shared<j2pb::Serializer>(std::make_unique<j2pb::ClassicExtensions>()), "test.json")
 	{
 	}
 };
@@ -44,7 +42,7 @@ struct FixtureClassic : public Fixture
 struct FixtureIgnoreCase : public Fixture
 {
 	FixtureIgnoreCase() 
-		: Fixture(std::make_shared<j2pb::Serializer>(std::make_shared<j2pb::ClassicExtensions>(), j2pb::Options().deserializeIgnoreCase(true)), "test_ignore_case.json")
+		: Fixture(std::make_shared<j2pb::Serializer>(std::make_unique<j2pb::ClassicExtensions>(), j2pb::Options().deserializeIgnoreCase(true)), "test_ignore_case.json")
 	{
 	}
 };
@@ -53,7 +51,7 @@ struct FixtureIgnoreCase : public Fixture
 struct FixtureOrtb : public Fixture
 {
 	FixtureOrtb() 
-		: Fixture(std::make_shared<j2pb::Serializer>(std::make_shared<j2pb::OpenRTBExtensions>()), "test_ortb.json")
+		: Fixture(std::make_shared<j2pb::Serializer>(std::make_unique<j2pb::OpenRTBExtensions>()), "test_ortb.json")
 	{
 	}
 };
@@ -66,14 +64,14 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testFields, T, Fixtures, T)
 	
 	Fixture& f = T::me;
 	json2pb::test::ComplexMessage msg;
-	
+
     BOOST_TEST_MESSAGE("json: " << f.m_json);
 	
 	f.m_serializer->toProtobuf(f.m_json.c_str(), f.m_json.length(), msg);
 	BOOST_TEST_MESSAGE("msg: " << msg.DebugString());
 	
 	BOOST_CHECK(msg.has__str() && msg._str() == "b");
-	BOOST_CHECK(msg.has__bin() && 0 == ::memcmp(msg._bin().data(), b64_decode("0a0a0a0a").data(), msg._bin().size()));
+	BOOST_CHECK(msg.has__bin() && 0 == ::memcmp(msg._bin().data(), j2pb::Bin2ASCII::b64_decode("0a0a0a0a").data(), msg._bin().size()));
 	BOOST_CHECK(msg.has__bool() && msg._bool());
 	BOOST_CHECK(msg.has__float() && (1.0f - msg._float()) < 0.000000001 );
 	BOOST_CHECK(4 == msg._int_size() && 10 == msg._int(0) && 20 == msg._int(1) && 30 == msg._int(2) && 40 == msg._int(3));
@@ -88,6 +86,16 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testFields, T, Fixtures, T)
 	BOOST_CHECK(2 == sub.echo_size() 
 		&& sub.echo(0).has_text() && "first" == sub.echo(0).text() 
 		&& sub.echo(1).has_text() && "second" == sub.echo(1).text());
+
+
+	// implicit string cast
+	BOOST_CHECK_EQUAL("1", msg.implicit_string_cast_int());
+	BOOST_CHECK_EQUAL("1.5", msg.implicit_string_cast_double());
+	BOOST_CHECK_EQUAL("true", msg.implicit_string_cast_boolean());
+	BOOST_CHECK_EQUAL("[1,2,3]", msg.implicit_string_cast_array());
+	BOOST_CHECK_EQUAL(R"({"key":"val"})", msg.implicit_string_cast_object());
+	BOOST_CHECK_EQUAL("1", msg.implicit_string_cast_repeated_int(0));
+	BOOST_CHECK_EQUAL("2", msg.implicit_string_cast_repeated_int(1));
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(testExtensions, T, Fixtures, T)

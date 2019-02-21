@@ -7,7 +7,7 @@
 
 BOOST_AUTO_TEST_CASE(testHook)
 {
-	j2pb::Serializer serializer(std::make_shared<j2pb::OpenRTBExtensions>());
+	j2pb::Serializer serializer(std::make_unique<j2pb::OpenRTBExtensions>());
 	
 	serializer.options().addEnumHook("json2pb.test.ValuesEnum", std::make_shared<j2pb::ChrReplaceSerializationHook>('_','-'));
 	

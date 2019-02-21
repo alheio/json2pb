@@ -20,30 +20,44 @@ namespace j2pb
 {
 	class Serializer
 	{
+		std::unique_ptr<Extensions> m_extensions;
 		Options m_options;
-		std::shared_ptr<Extensions> m_extensions;
-		
+
 	public:
-		Serializer(std::shared_ptr<Extensions> extensions);
-		Serializer(std::shared_ptr<Extensions> extensions, const Options& options);
-		Serializer(const Serializer& rhs) = delete;
-		
+		explicit Serializer(std::unique_ptr<Extensions> extensions);
+
+		Serializer(std::unique_ptr<Extensions> extensions, Options options);
+
+		Serializer(const Serializer& rhs);
+
+		Serializer(Serializer&& rhs) = default;
+
+		virtual ~Serializer() = default;
+
+		Serializer& operator=(const Serializer& rhs) = delete;
+
+		Serializer& operator=(Serializer&& rhs) = default;
+
 		std::string toJson(const google::protobuf::Message &msg) const;
 		std::string toJson(const google::protobuf::Message &msg, const Options& options) const;
 		
 		void toProtobuf(const char *buf, size_t size, google::protobuf::Message &msg);
-		
+		void toProtobuf(const char *buf, size_t size, google::protobuf::Message &msg, const Options& options);
+
 		Options& options() { return m_options; }
+		const Options& options() const { return m_options; }
 		
 	private:
-		Serializer& operator=(const Serializer& rhs) const;
-		
 		json_t* pb2json(const google::protobuf::Message& msg, const Options& options) const;
-		json_t* field2json(const google::protobuf::Message& msg, const google::protobuf::FieldDescriptor *field, size_t index, const Options& options) const;
+		json_t* field2json(const google::protobuf::Message& msg, const google::protobuf::FieldDescriptor *field, int index, const Options& options) const;
 		
-		void json2pb(google::protobuf::Message& msg, json_t* root);
-		void jsonArrayOrField2field(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, json_t* jf);
-		void json2field(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, json_t* jf);
+		void json2pb(google::protobuf::Message& msg, json_t* root, const Options& options) const;
+
+		void jsonArrayOrField2field(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, json_t* jf, const Options& options) const;
+
+		void json2field(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, json_t* jf, const Options& options) const;
+
+		static void jsonFieldSetOrAdd(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, const std::string& value);
 	};
 }
 

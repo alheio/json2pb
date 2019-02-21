@@ -4,6 +4,7 @@
 #include <google/protobuf/message.h>
 #include <string>
 #include <vector>
+#include <memory>
 
 struct json_t;
 
@@ -15,12 +16,11 @@ namespace j2pb
 		typedef std::pair<const google::protobuf::FieldDescriptor*, json_t*> extension_t;
 		
 	protected:
-		typedef std::vector<extension_t> extensions_t;
-		extensions_t m_extensions;
+		std::vector<extension_t> m_extensions;
 		
 	public:
-		virtual ~Extensions() {}
-		virtual Extensions* clone() = 0;
+		virtual ~Extensions() = default;
+		virtual std::unique_ptr<Extensions> clone() const = 0;
 		virtual void write(const google::protobuf::FieldDescriptor* fd, json_t* root, json_t* jf) const = 0;
 		virtual bool read(const google::protobuf::Reflection* ref, const std::string& jk, json_t* jf) = 0;
 		
@@ -33,18 +33,18 @@ namespace j2pb
 	class ClassicExtensions : public Extensions
 	{
 	public:
-		Extensions* clone() { return new ClassicExtensions(*this); }
-		void write(const google::protobuf::FieldDescriptor* fd, json_t* root, json_t* jf) const;
-		bool read(const google::protobuf::Reflection* ref, const std::string& jk, json_t* jf);
+		std::unique_ptr<Extensions> clone() const override;
+		void write(const google::protobuf::FieldDescriptor* fd, json_t* root, json_t* jf) const override;
+		bool read(const google::protobuf::Reflection* ref, const std::string& jk, json_t* jf) override;
 	};
 	
 	
 	class OpenRTBExtensions : public Extensions
 	{
 	public:
-		Extensions* clone() { return new OpenRTBExtensions(*this); }
-		void write(const google::protobuf::FieldDescriptor* fd, json_t* root, json_t* jf) const;
-		bool read(const google::protobuf::Reflection* ref, const std::string& jk, json_t* jf);
+		std::unique_ptr<Extensions> clone() const override;
+		void write(const google::protobuf::FieldDescriptor* fd, json_t* root, json_t* jf) const override;
+		bool read(const google::protobuf::Reflection* ref, const std::string& jk, json_t* jf) override;
 		
 	private:
 		void readMore(const google::protobuf::Reflection* ref, const std::string& name, json_t* jf);

@@ -6,20 +6,21 @@
  */
 
 #include "json2pb.h"
-#include <jansson.h>
+#include <utility>
 #include <algorithm>
-#include <ctype.h>
-#include <string.h>
-#include "bin2ascii.h"
+#include <jansson.h>
+#include <cctype>
+#include <cstring>
 #include "exceptions.hpp"
+#include "bin2ascii.hpp"
 
 using namespace google::protobuf;
 
 struct json_autoptr {
 	json_t * ptr;
-	json_autoptr(json_t *json) : ptr(json) {}
+	explicit json_autoptr(json_t *json) : ptr(json) {}
 	~json_autoptr() { if (ptr) json_decref(ptr); }
-	json_t * release() { json_t *tmp = ptr; ptr = 0; return tmp; }
+	json_t * release() { json_t *tmp = ptr; ptr = nullptr; return tmp; }
 };
 
 namespace j2pb 
@@ -27,19 +28,25 @@ namespace j2pb
 
 int json_dump_std_string(const char *buf, size_t size, void *data)
 {
-	std::string *s = (std::string *) data;
+	auto *s = (std::string *) data;
 	s->append(buf, size);
 	return 0;
 }
 
-Serializer::Serializer(std::shared_ptr<Extensions> extensions)
-	: m_extensions(extensions)
+Serializer::Serializer(std::unique_ptr<Extensions> extensions)
+	: m_extensions(std::move(extensions))
 {
 }
 
-Serializer::Serializer(std::shared_ptr<Extensions> extensions, const Options& options)
-	: m_extensions(extensions)
-	, m_options(options)
+Serializer::Serializer(std::unique_ptr<Extensions> extensions, Options options)
+	: m_extensions(std::move(extensions))
+	, m_options(std::move(options))
+{
+}
+
+Serializer::Serializer(const Serializer& rhs)
+	: m_extensions(rhs.m_extensions->clone())
+	, m_options(rhs.m_options)
 {
 }
 
@@ -61,6 +68,11 @@ std::string Serializer::toJson(const Message& msg, const Options& options) const
 
 void Serializer::toProtobuf(const char *buf, size_t size, google::protobuf::Message &msg)
 {
+	toProtobuf(buf, size, msg, m_options);
+}
+
+void Serializer::toProtobuf(const char *buf, size_t size, google::protobuf::Message &msg, const Options& options)
+{
 	json_t *root;
 	json_error_t error;
 
@@ -74,7 +86,7 @@ void Serializer::toProtobuf(const char *buf, size_t size, google::protobuf::Mess
 	if (!json_is_object(root))
 		throw j2pb_error("Malformed JSON: not an object");
 
-	json2pb(msg, root);
+	json2pb(msg, root, options);
 }
 
 json_t* Serializer::pb2json(const google::protobuf::Message& msg, const Options& options) const
@@ -82,27 +94,29 @@ json_t* Serializer::pb2json(const google::protobuf::Message& msg, const Options&
 	const Descriptor *d = msg.GetDescriptor();
 	const Reflection *ref = msg.GetReflection();
 	
-	if (!d || !ref) return 0;
+	if (!d || !ref) return nullptr;
 
 	json_t *root = json_object();
 	json_autoptr _auto(root);
 
 	std::vector<const FieldDescriptor *> fields;
+	fields.reserve(16);
+
 	ref->ListFields(msg, &fields);
 	
-	json_t* ext = 0;
+	json_t* ext = nullptr;
 
-	for (size_t i = 0; i != fields.size(); i++)
+	for (int i = 0; i != fields.size(); i++)
 	{
 		const FieldDescriptor *field = fields[i];
 
-		json_t *jf = 0;
+		json_t *jf = nullptr;
 		if(field->is_repeated()) {
-			size_t count = ref->FieldSize(msg, field);
+			auto count = ref->FieldSize(msg, field);
 			if (!count) continue;
 
 			json_autoptr array(json_array());
-			for (size_t j = 0; j < count; j++)
+			for (int j = 0; j < count; j++)
 				json_array_append_new(array.ptr, field2json(msg, field, j, options));
 			jf = array.release();
 		} else if (ref->HasField(msg, field))
@@ -123,11 +137,11 @@ json_t* Serializer::pb2json(const google::protobuf::Message& msg, const Options&
 	return _auto.release();
 }
 
-json_t* Serializer::field2json(const Message& msg, const FieldDescriptor* field, size_t index, const Options& options) const
+json_t* Serializer::field2json(const Message& msg, const FieldDescriptor* field, int index, const Options& options) const
 {
 	const Reflection *ref = msg.GetReflection();
 	const bool repeated = field->is_repeated();
-	json_t *jf = 0;
+	json_t *jf = nullptr;
 	switch (field->cpp_type())
 	{
 #define _CONVERT(type, ctype, fmt, sfunc, afunc)		\
@@ -153,7 +167,7 @@ json_t* Serializer::field2json(const Message& msg, const FieldDescriptor* field,
 				ref->GetRepeatedStringReference(msg, field, index, &scratch):
 				ref->GetStringReference(msg, field, &scratch);
 			if (field->type() == FieldDescriptor::TYPE_BYTES)
-				jf = json_string(b64_encode(value).c_str());
+				jf = json_string(Bin2ASCII::b64_encode(value).c_str());
 			else
 				jf = json_string(value.c_str());
 			break;
@@ -169,8 +183,8 @@ json_t* Serializer::field2json(const Message& msg, const FieldDescriptor* field,
 			const EnumValueDescriptor* ef = (repeated) ? ref->GetRepeatedEnum(msg, field, index) : ref->GetEnum(msg, field);
 			if (!options.enumAsNumber())
 			{
-				const SerializationHook* hook = options.getEnumHook(ef->type()->full_name());
-				jf = NULL != hook ? json_string(hook->preSerialize(ef->name()).c_str()) : json_string(ef->name().c_str());
+				auto hook = options.getEnumHook(ef->type()->full_name());
+				jf = hook ? json_string(hook->preSerialize(ef->name()).c_str()) : json_string(ef->name().c_str());
 			}
 			else
 			{
@@ -193,7 +207,7 @@ std::string toLowercase(const std::string& value)
 	return rc;
 }
 
-void Serializer::json2pb(google::protobuf::Message& msg, json_t* root)
+void Serializer::json2pb(google::protobuf::Message& msg, json_t* root, const Options& options) const
 {
 	const Descriptor *d = msg.GetDescriptor();
 	const Reflection *ref = msg.GetReflection();
@@ -215,9 +229,9 @@ void Serializer::json2pb(google::protobuf::Message& msg, json_t* root)
 			field = d->FindFieldByName(name);
 		}
 		
-		if (NULL != field)
+		if (nullptr != field)
 		{
-			jsonArrayOrField2field(msg, field, jf);
+			jsonArrayOrField2field(msg, field, jf, options);
 		}
 		else
 		{
@@ -226,7 +240,7 @@ void Serializer::json2pb(google::protobuf::Message& msg, json_t* root)
 				for (std::size_t j = 0; j<m_extensions->size(); ++j)
 				{
 					Extensions::extension_t ext = m_extensions->get(j);
-					jsonArrayOrField2field(msg, ext.first, ext.second);
+					jsonArrayOrField2field(msg, ext.first, ext.second, options);
 				}
 			}
 			else if (!m_options.ignoreUnknownFields())
@@ -237,21 +251,21 @@ void Serializer::json2pb(google::protobuf::Message& msg, json_t* root)
 	}
 }
 
-void Serializer::jsonArrayOrField2field(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, json_t* jf)
+void Serializer::jsonArrayOrField2field(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, json_t* jf, const Options& options) const
 {
 	if (field->is_repeated()) 
 	{
 		if (!json_is_array(jf))
 			throw j2pb_error(field, "Not array");
-		
+
 		for (size_t j = 0, sz = json_array_size(jf); j < sz; j++)
-			json2field(msg, field, json_array_get(jf, j));
+			json2field(msg, field, json_array_get(jf, j), options);
 	} 
-	else 
-		json2field(msg, field, jf);
+	else
+		json2field(msg, field, jf, options);
 }
 
-void Serializer::json2field(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, json_t* jf)
+void Serializer::json2field(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, json_t* jf, const Options& options) const
 {
 	const Reflection *ref = msg.GetReflection();
 	const bool repeated = field->is_repeated();
@@ -289,32 +303,43 @@ void Serializer::json2field(google::protobuf::Message& msg, const google::protob
 
 		case FieldDescriptor::CPPTYPE_STRING: {
 			if (!json_is_string(jf))
-				throw j2pb_error(field, "Not a string");
-			const char * value = json_string_value(jf);
-			if(field->type() == FieldDescriptor::TYPE_BYTES)
-				_SET_OR_ADD(SetString, AddString, b64_decode(value));
+			{
+				if (!options.isJson2PbufImplicitCastToString())
+					throw j2pb_error(field, "Not a string");
+
+				std::unique_ptr<char[]> value(json_dumps(jf, JSON_ENCODE_ANY|JSON_COMPACT));
+				if (!value)
+					throw j2pb_error(field, "implicit string cast failed");
+
+				jsonFieldSetOrAdd(msg, field, value.get());
+			}
 			else
-				_SET_OR_ADD(SetString, AddString, value);
+			{
+				const char* value = json_string_value(jf);
+
+				jsonFieldSetOrAdd(msg, field, value);
+			}
+
 			break;
 		}
 		case FieldDescriptor::CPPTYPE_MESSAGE: {
 			Message *mf = (repeated)?
 				ref->AddMessage(&msg, field):
 				ref->MutableMessage(&msg, field);
-			json2pb(*mf, jf);
+			json2pb(*mf, jf, options);
 			break;
 		}
 		case FieldDescriptor::CPPTYPE_ENUM: {
 			const EnumDescriptor *ed = field->enum_type();
-			const EnumValueDescriptor *ev = 0;
+			const EnumValueDescriptor *ev = nullptr;
 			if (json_is_integer(jf)) {
 				ev = ed->FindValueByNumber(json_integer_value(jf));
 			} else if (json_is_string(jf)) {
 				const char* valueName = json_string_value(jf);
 				if (nullptr == valueName || '\0' == *valueName)
 					break; // ignore enum empty strings
-				const SerializationHook* hook = m_options.getEnumHook(ed->full_name());
-				ev = NULL != hook ? ed->FindValueByName(hook->preDeserialize(valueName)) : ed->FindValueByName(valueName);
+				auto hook = m_options.getEnumHook(ed->full_name());
+				ev = hook ? ed->FindValueByName(hook->preDeserialize(valueName)) : ed->FindValueByName(valueName);
 			} else
 				throw j2pb_error(field, "Not an integer or string");
 			if (!ev)
@@ -324,6 +349,20 @@ void Serializer::json2field(google::protobuf::Message& msg, const google::protob
 		}
 		default:
 			break;
+	}
+}
+
+void Serializer::jsonFieldSetOrAdd(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor* field, const std::string& value)
+{
+	const auto * ref = msg.GetReflection();
+
+	if (field->is_repeated())
+	{
+		ref->AddString(&msg, field, field->type() == FieldDescriptor::TYPE_BYTES ? Bin2ASCII::b64_decode(value) : value);
+	}
+	else
+	{
+		ref->SetString(&msg, field, field->type() == FieldDescriptor::TYPE_BYTES ? Bin2ASCII::b64_decode(value) : value);
 	}
 }
 
