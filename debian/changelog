@@ -1,3 +1,9 @@
+libjson2pb (1.4.5-1) unstable; urgency=low
+
+  * option - jsonRealPrecision
+
+ --  <zaharov.sy@gmail.com>  Wed, 20 Feb 2019 18:20:44 +0300
+
 libjson2pb (1.4.4-1) unstable; urgency=low
 
   * option - implicit cast to protobuf string from json non-string
