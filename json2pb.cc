@@ -61,7 +61,7 @@ std::string Serializer::toJson(const Message& msg, const Options& options) const
 
 	json_t *root = pb2json(msg, options);
 	json_autoptr _auto(root);
-	json_dump_callback(root, json_dump_std_string, &r, 0);
+	json_dump_callback(root, json_dump_std_string, &r, JSON_REAL_PRECISION(options.jsonRealPrecision()));
 	return r;
 }
 

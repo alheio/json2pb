@@ -151,3 +151,25 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testSerializations, T, Fixtures, T)
 
 	BOOST_CHECK(str1 == str2);
 }
+
+BOOST_AUTO_TEST_CASE(testJsonRealPrecision)
+{
+	json2pb::test::DoubleMessage msg;
+	msg.set_value(33.53);
+	j2pb::Serializer serializer(nullptr);
+	BOOST_CHECK_EQUAL(serializer.toJson(msg), R"({"value": 33.530000000000001})");
+	serializer.options().setJsonRealPrecision(18);
+	BOOST_CHECK_EQUAL(serializer.toJson(msg), R"({"value": 33.5300000000000011})");
+	serializer.options().setJsonRealPrecision(17);
+	BOOST_CHECK_EQUAL(serializer.toJson(msg), R"({"value": 33.530000000000001})");
+	serializer.options().setJsonRealPrecision(16);
+	BOOST_CHECK_EQUAL(serializer.toJson(msg), R"({"value": 33.53})");
+	serializer.options().setJsonRealPrecision(4);
+	BOOST_CHECK_EQUAL(serializer.toJson(msg), R"({"value": 33.53})");
+	serializer.options().setJsonRealPrecision(3);
+	BOOST_CHECK_EQUAL(serializer.toJson(msg), R"({"value": 33.5})");
+	serializer.options().setJsonRealPrecision(2);
+	BOOST_CHECK_EQUAL(serializer.toJson(msg), R"({"value": 34.0})");
+	serializer.options().setJsonRealPrecision(1);
+	BOOST_CHECK_EQUAL(serializer.toJson(msg), R"({"value": 3e1})");
+}

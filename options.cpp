@@ -1,10 +1,12 @@
 #include "options.hpp"
+#include "exceptions.hpp"
 
 j2pb::Options::Options()
 		: m_enumAsNumber(false)
 		, m_deserializeIgnoreCase(false)
 		, m_ignoreUnknownFields(false)
 		, m_json2pbufImplicitCastToString(true)
+		, m_jsonRealPrecision(17)
 {
 }
 
@@ -14,6 +16,7 @@ j2pb::Options::Options(const Options& rhs)
 		, m_deserializeIgnoreCase(rhs.m_deserializeIgnoreCase)
 		, m_ignoreUnknownFields(rhs.m_ignoreUnknownFields)
 		, m_json2pbufImplicitCastToString(rhs.m_json2pbufImplicitCastToString)
+		, m_jsonRealPrecision(rhs.m_jsonRealPrecision)
 {
 }
 
@@ -26,6 +29,7 @@ j2pb::Options& j2pb::Options::operator=(const Options& rhs)
 		m_deserializeIgnoreCase = rhs.m_deserializeIgnoreCase;
 		m_ignoreUnknownFields = rhs.m_ignoreUnknownFields;
 		m_json2pbufImplicitCastToString = rhs.m_json2pbufImplicitCastToString;
+		m_jsonRealPrecision = rhs.m_jsonRealPrecision;
 	}
 	return *this;
 }
@@ -80,6 +84,11 @@ bool j2pb::Options::isJson2PbufImplicitCastToString() const
 	return m_json2pbufImplicitCastToString;
 }
 
+size_t j2pb::Options::jsonRealPrecision() const
+{
+	return m_jsonRealPrecision;
+}
+
 /**
  * enable or disable implicit string cast from non-string json values to protobuf string scheme
  * default: enabled
@@ -90,6 +99,15 @@ j2pb::Options& j2pb::Options::setJson2PbufImplicitCastToString(bool value)
 	return *this;
 }
 
+j2pb::Options& j2pb::Options::setJsonRealPrecision(size_t value)
+{
+	if (value > 31)
+	{
+		throw j2pb_error("json real precision should be in range 0..31");
+	}
+	m_jsonRealPrecision = value;
+	return *this;
+}
 
 std::map<std::string, std::shared_ptr<const j2pb::SerializationHook> > j2pb::Options::cloneHooks() const
 {

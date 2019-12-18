@@ -25,6 +25,9 @@ namespace j2pb
 		/// default: true
 		bool m_json2pbufImplicitCastToString;
 
+		/// 0..31; default: 17
+		size_t m_jsonRealPrecision;
+
 	public:
 		Options();
 
@@ -72,6 +75,13 @@ namespace j2pb
 		 */
 		Options& setJson2PbufImplicitCastToString(bool value);
 
+		/**
+		 * pbuf->json: output real numbers with at most value digits of precision
+		 * range: 0..31
+		 * default: 17
+		 */
+		Options& setJsonRealPrecision(size_t value);
+
 		std::shared_ptr<const SerializationHook> getEnumHook(const std::string& typeName) const;
 
 		bool enumAsNumber() const;
@@ -81,6 +91,8 @@ namespace j2pb
 		bool ignoreUnknownFields() const;
 
 		bool isJson2PbufImplicitCastToString() const;
+
+		size_t jsonRealPrecision() const;
 
 	private:
 		std::map<std::string, std::shared_ptr<const SerializationHook> > cloneHooks() const;

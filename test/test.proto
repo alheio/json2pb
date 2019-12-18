@@ -55,5 +55,9 @@ message EnumMessage
 	repeated ValuesEnum enums = 1;
 };
 
+message DoubleMessage
+{
+	required double value = 1;
+}
 
 // vim: sts=4 sw=4 et
